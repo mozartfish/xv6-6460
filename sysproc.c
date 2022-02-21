@@ -18,9 +18,25 @@ int sys_exit(void)
   return 0; // not reached
 }
 
+int sys_exit2(void)
+{
+  int exit_status;
+  if (argint(0, &exit_status) < 0)
+    return -1;
+  return exit2(exit_status);
+}
+
 int sys_wait(void)
 {
   return wait();
+}
+
+int sys_wait2(void)
+{
+  int *exit_status;
+  if (argptr(0, (char **)&exit_status, sizeof(int)) < 0)
+    return -1;
+  return wait2(exit_status);
 }
 
 int sys_kill(void)

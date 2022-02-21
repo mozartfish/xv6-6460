@@ -10,7 +10,9 @@
 
 SYSCALL(fork)
 SYSCALL(exit)
+SYSCALL(exit2)
 SYSCALL(wait)
+SYSCALL(wait2)
 SYSCALL(pipe)
 SYSCALL(read)
 SYSCALL(write)
