@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "pstat.h"
 
 struct {
   struct spinlock lock;
@@ -88,6 +89,8 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+  p->tickets = 1; // give every new process a ticket of 1
+  p->ticks = 0; // give every new process a tick of 0
 
   release(&ptable.lock);
 
@@ -198,6 +201,7 @@ fork(void)
   }
   np->sz = curproc->sz;
   np->parent = curproc;
+  np->tickets = curproc->tickets; // give every child process the same number of tickets as the parent
   *np->tf = *curproc->tf;
 
   // Clear %eax so that fork returns 0 in the child.
@@ -411,6 +415,37 @@ int wait2(int *exit_status)
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock); // DOC: wait-sleep
   }
+}
+
+// Takes a pstat struct and populates information about the process
+// including pid, number of tickets and use
+int getpinfo(struct pstat *p_info)
+{
+  struct proc *p;
+  int counter = 0;
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state != UNUSED)
+    {
+      p_info->proc[counter].inuse = 1;
+      p_info->proc[counter].pid = p->pid;
+      p_info->proc[counter].tickets = p->tickets;
+      p_info->proc[counter].ticks = p->ticks;
+    }
+    else
+    {
+      p_info->proc[counter].inuse = 0;
+      p_info->proc[counter].pid = p->pid;
+      p_info->proc[counter].tickets = p->tickets;
+      p_info->proc[counter].ticks = p->ticks;
+    }
+    ++counter;
+  }
+  release(&ptable.lock);
+
+  return 0;
 }
 
 //PAGEBREAK: 42
