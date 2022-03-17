@@ -17,6 +17,7 @@ int main(int argc, char *argv[])
     if (argv[1][0] == '-')
     {
         printf(1, "Error: Invalid number of tickets. Negative tickets passed as argument\n");
+        exit();
     }
 
     int num_tickets = atoi(argv[1]); // the number of tickets the process should run with
