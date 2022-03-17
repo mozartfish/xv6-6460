@@ -23,3 +23,5 @@
 #define SYS_freemem 22
 #define SYS_exit2 23
 #define SYS_wait2 24
+#define SYS_settickets 25
+#define SYS_getpinfo 26
