@@ -14,6 +14,7 @@ struct {
 } ptable;
 
 static struct proc *initproc;
+unsigned int prng_state = 0x7a8f3eba; // Global variable for random number generator
 
 int nextpid = 1;
 extern void forkret(void);
@@ -437,25 +438,33 @@ int getpinfo(struct pstat *p_info)
     else
     {
       p_info->proc[counter].inuse = 0;
-      p_info->proc[counter].pid = p->pid;
-      p_info->proc[counter].tickets = p->tickets;
-      p_info->proc[counter].ticks = p->ticks;
+      p_info->proc[counter].pid = 0;
+      p_info->proc[counter].tickets = 0;
+      p_info->proc[counter].ticks = 0;
     }
     ++counter;
   }
   release(&ptable.lock);
-
   return 0;
 }
 
-//PAGEBREAK: 42
-// Per-CPU process scheduler.
-// Each CPU calls scheduler() after setting itself up.
-// Scheduler never returns.  It loops, doing:
-//  - choose a process to run
-//  - swtch to start running that process
-//  - eventually that process transfers control
-//      via swtch back to the scheduler.
+// Random number generator for lottery scheduler
+unsigned int xorshift32() {
+  unsigned int x = prng_state;
+  x ^= x << 13; 
+  x ^= x >> 17; 
+  x ^= x << 5;
+  prng_state = x;
+  return prng_state;
+}
+// //PAGEBREAK: 42
+// // Per-CPU process lottery scheduler.
+// // Each CPU calls scheduler() after setting itself up.
+// // Scheduler never returns.  It loops, doing:
+// //  - choose a process to run
+// //  - swtch to start running that process
+// //  - eventually that process transfers control
+// //      via swtch back to the scheduler.
 void
 scheduler(void)
 {
@@ -466,11 +475,38 @@ scheduler(void)
   for(;;){
     // Enable interrupts on this processor.
     sti();
-
+    
     // Loop over process table looking for process to run.
+    int ticket_sum = 0;
+
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE) {
+        ticket_sum += p->tickets;
+      }
+    
+    }
+    // the random number generator
+    unsigned long winner = xorshift32();
+
+    // Initially the ticket_sum is 0 so we need to skip this and free
+    // the memory when the sum is 0.
+    if (ticket_sum == 0)
+    {
+      release(&ptable.lock);
+      continue;
+    }
+
+    // Calculate the winner and use mod (see Professor Stutsman's hint on discussion)
+    winner = winner % ticket_sum;
+    int ticket_counter = 0;
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
+        continue;
+      
+      ticket_counter += p->tickets;
+      if (ticket_counter < winner)
         continue;
 
       // Switch to chosen process.  It is the process's job
@@ -491,6 +527,54 @@ scheduler(void)
 
   }
 }
+
+// //PAGEBREAK: 42
+// // Per-CPU process scheduler.
+// // Each CPU calls scheduler() after setting itself up.
+// // Scheduler never returns.  It loops, doing:
+// //  - choose a process to run
+// //  - swtch to start running that process
+// //  - eventually that process transfers control
+// //      via swtch back to the scheduler.
+// void
+// scheduler(void)
+// {
+//   struct proc *p;
+//   struct cpu *c = mycpu();
+//   c->proc = 0;
+  
+//   for(;;){
+//     // Enable interrupts on this processor.
+//     sti();
+
+//     int ticket_sum = 0;
+    
+//     // Loop over process table looking for process to run.
+//     acquire(&ptable.lock);
+//     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//       if(p->state != RUNNABLE)
+//         continue;
+
+//       // Switch to chosen process.  It is the process's job
+//       // to release ptable.lock and then reacquire it
+//       // before jumping back to us.
+//       c->proc = p;
+//       switchuvm(p);
+//       p->state = RUNNING;
+
+//       swtch(&(c->scheduler), p->context);
+//       switchkvm();
+
+//       // Process is done running for now.
+//       // It should have changed its p->state before coming back.
+//       c->proc = 0;
+//     }
+//     release(&ptable.lock);
+
+//   }
+//}
+
+
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
