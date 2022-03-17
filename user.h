@@ -1,5 +1,6 @@
 struct stat;
 struct rtcdate;
+struct pstat;
 
 // system calls
 int fork(void);
@@ -12,6 +13,8 @@ int write(int, const void *, int);
 int read(int, void *, int);
 int close(int);
 int kill(int);
+int settickets(int);
+int getpinfo(struct pstat *);
 int exec(char *, char **);
 int open(const char *, int);
 int mknod(const char *, short, short);
