@@ -39,6 +39,26 @@ int sys_wait2(void)
   return wait2(exit_status);
 }
 
+// these two functions are based on how switchuvm is used for growproc in proc.c and sys_sbreak
+int sys_settickets(void)
+{
+  int tickets;
+  if (argint(0, &tickets) < 0)
+    return -1;
+  // Set the number of tickets
+  myproc()->tickets = tickets;
+  return 0;
+}
+
+int sys_getpinfo(void)
+{
+  struct pstat *p;
+  if (argptr(1, (char **)&p, sizeof(struct pstat)) < 0)
+    return -1;
+  getpinfo(p);
+  return 0;
+}
+
 int sys_kill(void)
 {
   int pid;
