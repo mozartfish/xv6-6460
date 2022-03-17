@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
         {
             if (p_info->proc[i].inuse)
             {
-                printf(1, "%d, %d %d\n", p_info->proc[i].pid, p_info->proc[i].tickets, p_info->proc[i].ticks);
+                printf(1, "%d %d %d\n", p_info->proc[i].pid, p_info->proc[i].tickets, p_info->proc[i].ticks);
             }
         }
         // free(p_info);
@@ -51,10 +51,9 @@ int main(int argc, char *argv[])
                 {
                     if (p_info->proc[i].inuse)
                     {
-                        printf(1, "%d, %d %d\n", p_info->proc[i].pid, p_info->proc[i].tickets, p_info->proc[i].ticks);
+                        printf(1, "%d %d %d\n", p_info->proc[i].pid, p_info->proc[i].tickets, p_info->proc[i].ticks);
                     }
                 }
-
                 sleep(100); // sleep every 100 ticks
             }
         }
