@@ -54,7 +54,7 @@ int sys_settickets(void)
 int sys_getpinfo(void)
 {
   struct pstat *p;
-  if (argptr(1, (char **)&p, sizeof(struct pstat)) < 0)
+  if (argptr(0, (char **)&p, sizeof(struct pstat)) < 0)
     return -1;
   getpinfo(p);
   return 0;
