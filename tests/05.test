@@ -1,0 +1,41 @@
+#!/bin/bash
+
+echo '
+#include "types.h"
+#include "user.h"
+#include "pstat.h"
+
+int
+main(int argc, char *argv[])
+{
+  struct pstat info;
+  int r = getpinfo(&info);
+  exit();
+  return info.proc[0].inuse + r;
+}
+' > ../05-test.c
+
+awk '
+  /^fs.img/ {
+    print "UPROGS += _05-test"
+    print $0
+    next
+  }
+
+  {
+    print $0
+  }
+' < ../Makefile > ../05-Makefile
+
+(cd ..; make clean; make -f 05-Makefile fs.img)
+OK=$?
+
+echo -en "\n*** $0 - Programs using getpinfo compile --> "
+
+if [[ "$OK" == "0" ]]; then
+  echo OK
+else
+  echo FAIL
+fi
+
+rm ../05-Makefile ../05-test.c ../_05-test

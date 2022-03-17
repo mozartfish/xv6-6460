@@ -1,0 +1,53 @@
+#!/bin/bash
+
+echo '
+#include "types.h"
+#include "user.h"
+#include "pstat.h"
+
+int
+main(int argc, char *argv[])
+{
+  struct pstat info;
+  int r = getpinfo(&info);
+  printf(1, "=-=-=-> getpinfo() returned %d\n", r);
+  exit();
+  return info.proc[0].inuse + r;
+}
+' > ../06-test.c
+
+awk '
+  /^fs.img/ {
+    print "UPROGS += _06-test"
+    print $0
+    next
+  }
+
+  {
+    print $0
+  }
+' < ../Makefile > ../06-Makefile
+
+(cd ..; make clean; make -f 06-Makefile xv6.img fs.img)
+OK=$?
+
+
+RESULT=OK
+if [[ "$OK" == "0" ]]; then
+  tmp=$(mktemp)
+  (cd ..; ./tests/06.helper) | tee $tmp
+  grep '=-=-=-> getpinfo() returned 0' $tmp > /dev/null
+  OK=$?
+  rm $tmp
+  if [[ "$OK" == "0" ]]; then
+    RESULT=OK
+  else
+    RESULT=FAIL
+  fi
+else
+  RESULT=FAIL
+fi
+
+echo -e "\n*** $0 - Programs calling getpinfo does not crash --> $RESULT"
+
+rm ../06-Makefile ../06-test.c ../_06-test

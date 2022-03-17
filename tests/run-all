@@ -1,0 +1,14 @@
+#!/bin/bash
+
+mkdir logs
+
+logfile=logs/$(date +%Y-%m-%d-%H-%M-%S).log
+
+for t in *.test; do
+  ./$t
+done | tee $logfile
+
+(cd logs; ln -sf $(basename $logfile) latest.log)
+
+echo -e "\n\n=== Test Results ==="
+grep '^\*\*\*' logs/latest.log

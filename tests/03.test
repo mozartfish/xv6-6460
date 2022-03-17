@@ -1,0 +1,71 @@
+#!/bin/bash
+
+echo '
+#include "types.h"
+#include "user.h"
+
+int
+main(int argc, char *argv[])
+{
+  int r = settickets(1);
+  printf(1, "=-=-=-> settickets(1) returned %d\n", r);
+  exit();
+  return r;
+}
+' > ../03-test.c
+
+awk '
+  /^fs.img/ {
+    print "UPROGS += _03-test"
+    print $0
+    next
+  }
+
+  {
+    print $0
+  }
+' < ../Makefile > ../03-Makefile
+
+(cd ..; make clean; make -f 03-Makefile xv6.img fs.img)
+OK=$?
+
+MSG=""
+if [[ "$OK" != "0" ]]; then
+  MSG="Failure compiling"
+else
+  tmp=$(mktemp)
+  (cd ..; ./tests/03.helper) | tee $tmp
+  grep '=-=-=-> settickets(1) returned 0' $tmp > /dev/null
+  OK=$?
+  rm $tmp
+fi
+
+# Expect objdump + awk gives something like this. To approximate rubric check
+# to at least make sure their stub invokes a trap.
+#
+# 0000030a <settickets>:
+#   30a:   b8 17 00 00 00          mov    $0x17,%eax
+#   30f:   cd 40                   int    $0x40
+#   311:   c3                      ret  
+if [[ "$OK" != "0" ]]; then
+  MSG="Run of test binary did not produce expected output string"
+else
+  echo Slice of asm from settickets
+  objdump -d ../_03-test | awk -v RS= '/^[[:xdigit:]]+ <settickets>/' | grep int
+  OK=$?
+fi
+
+if [[ "$OK" != "0" ]]; then
+  MSG="Stub code is missing trap instruction"
+fi
+
+if [[ "$OK" != "0" ]]; then
+  echo $MSG
+  RESULT=FAIL
+else
+  RESULT=OK
+fi
+
+echo -e "\n*** $0 - Programs calling settickets invokes int --> $RESULT"
+
+rm ../03-Makefile ../03-test.c ../_03-test

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+echo '
+#include "types.h"
+#include "user.h"
+
+int
+main(int argc, char *argv[])
+{
+  int r = settickets(1);
+  exit();
+  return r;
+}
+' > ../01-test.c
+
+awk '
+  /^fs.img/ {
+    print "UPROGS += _01-test"
+    print $0
+    next
+  }
+
+  {
+    print $0
+  }
+' < ../Makefile > ../01-Makefile
+
+(cd ..; make clean; make -f 01-Makefile fs.img)
+OK=$?
+
+echo -en "\n*** $0 - Programs using settickets compile --> "
+
+if [[ "$OK" == "0" ]]; then
+  echo OK
+else
+  echo FAIL
+fi
+
+rm ../01-Makefile ../01-test.c ../_01-test

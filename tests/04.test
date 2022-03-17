@@ -1,0 +1,72 @@
+#!/bin/bash
+
+R=$(($RANDOM % 10 + 5))
+echo "
+#include \"types.h\"
+#include \"user.h\"
+#include \"pstat.h\"
+
+int
+main(int argc, char *argv[])
+{
+  int r = settickets($R);
+
+  struct pstat stat;
+  if (getpinfo(&stat) != 0) {
+    printf(1, \"Failure during getpinfo\\n\");
+    exit();
+  }
+
+  int i;
+  for (i = 0; i < NPROC; ++i) {
+    if (!stat.proc[i].inuse)
+      continue;
+    if (stat.proc[i].tickets == $R)
+      printf(1, \"=-=-=-> getpinfo found correct ticket number\\n\");
+  }
+
+  exit();
+  return r;
+}
+" > ../04-test.c
+
+awk '
+  /^fs.img/ {
+    print "UPROGS += _04-test"
+    print $0
+    next
+  }
+
+  {
+    print $0
+  }
+' < ../Makefile > ../04-Makefile
+
+(cd ..; make clean; make -f 04-Makefile xv6.img fs.img)
+OK=$?
+
+MSG=""
+if [[ "$OK" != "0" ]]; then
+  MSG="Failure compiling"
+else
+  tmp=$(mktemp)
+  (cd ..; ./tests/04.helper) | tee $tmp
+  grep '=-=-=-> getpinfo found correct ticket number' $tmp > /dev/null
+  OK=$?
+  rm $tmp
+fi
+
+if [[ "$OK" != "0" ]]; then
+  MSG="Program did not produce expected output"
+fi
+
+if [[ "$OK" != "0" ]]; then
+  echo $MSG
+  RESULT=FAIL
+else
+  RESULT=OK
+fi
+
+echo -e "\n*** $0 - settickets actually sets tickets --> $RESULT"
+
+rm ../04-Makefile ../04-test.c ../_04-test

@@ -1,0 +1,51 @@
+#!/bin/bash
+
+echo '
+#include "types.h"
+#include "user.h"
+
+int
+main(int argc, char *argv[])
+{
+  int r = settickets(1);
+  printf(1, "=-=-=-> settickets(1) returned %d\n", r);
+  exit();
+  return r;
+}
+' > ../02-test.c
+
+awk '
+  /^fs.img/ {
+    print "UPROGS += _02-test"
+    print $0
+    next
+  }
+
+  {
+    print $0
+  }
+' < ../Makefile > ../02-Makefile
+
+(cd ..; make clean; make -f 02-Makefile xv6.img fs.img)
+OK=$?
+
+
+RESULT=OK
+if [[ "$OK" == "0" ]]; then
+  tmp=$(mktemp)
+  (cd ..; ./tests/02.helper) | tee $tmp
+  grep '=-=-=-> settickets(1) returned 0' $tmp > /dev/null
+  OK=$?
+  rm $tmp
+  if [[ "$OK" == "0" ]]; then
+    RESULT=OK
+  else
+    RESULT=FAIL
+  fi
+else
+  RESULT=FAIL
+fi
+
+echo -e "\n*** $0 - Programs calling settickets does not crash --> $RESULT"
+
+rm ../02-Makefile ../02-test.c ../_02-test

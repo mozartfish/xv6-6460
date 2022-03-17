@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo -en "\n*** $0 - Makefile CPUS := 1 --> "
+awk '
+  /CPUS :=/ {
+    cpus = $3
+    if (cpus == "1") {
+      print "OK"
+      exit 0
+    } else {
+      print "FAIL"
+    }
+  }
+' < ../Makefile
